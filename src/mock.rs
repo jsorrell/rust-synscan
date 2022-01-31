@@ -1,6 +1,6 @@
+use serialport::{ClearBuffer, DataBits, FlowControl, Parity, SerialPort, StopBits};
 use std::io::{Read, Write};
 use std::time::Duration;
-use serialport::{ClearBuffer, DataBits, FlowControl, Parity, SerialPort, StopBits};
 
 pub struct MockSynScanPort {
     bytes_written: Vec<u8>,

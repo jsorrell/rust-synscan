@@ -1,16 +1,16 @@
 extern crate core;
 
 mod comm;
-pub mod motors;
-pub mod util;
-pub mod result;
 pub mod mock;
+pub mod motors;
+pub mod result;
+pub mod util;
 
-use std::time::Duration;
+use crate::result::{SynScanError, SynScanResult};
+use crate::util::*;
 use serialport;
 use serialport::SerialPort;
-use crate::util::*;
-use crate::result::{SynScanError, SynScanResult};
+use std::time::Duration;
 
 /// Port for serial communication to SynScan Motor Controller
 struct MotorControllerPort<'a> {
@@ -54,21 +54,27 @@ pub struct MotorController<'a> {
     motor_parameters: MotorParameters,
 }
 
-impl <'a>MotorController<'a> {
-    pub fn new(path: &'a str, baud_rate: u32, timeout: Duration) -> Result<MotorController, SynScanError> {
+impl<'a> MotorController<'a> {
+    pub fn new(
+        path: &'a str,
+        baud_rate: u32,
+        timeout: Duration,
+    ) -> Result<MotorController, SynScanError> {
         Self::new_with_port(serialport::new(path, baud_rate).timeout(timeout).open()?)
     }
 
     pub fn new_with_port(port: Box<dyn SerialPort + 'a>) -> SynScanResult<Self> {
-        let mut port = MotorControllerPort {
-            serial_port: port
-        };
+        let mut port = MotorControllerPort { serial_port: port };
 
         let motor_parameters = MotorParameters {
-            counts_per_revolution: BiChannelValue::new_from_result_fn(|c| port.inquire_number(b'a', &c))?,
+            counts_per_revolution: BiChannelValue::new_from_result_fn(|c| {
+                port.inquire_number(b'a', &c)
+            })?,
             timer_interrupt_freq: port.inquire_number(b'b', &SingleChannel::Channel1)?,
             // motor_board_version: (0, 0),
-            high_speed_ratio: BiChannelValue::new_from_result_fn(|c| port.inquire_number(b'g', &c))?,
+            high_speed_ratio: BiChannelValue::new_from_result_fn(|c| {
+                port.inquire_number(b'g', &c)
+            })?,
         };
 
         Ok(Self {

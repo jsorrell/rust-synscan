@@ -1,5 +1,5 @@
-use std::{fmt, io};
 use std::error::Error;
+use std::{fmt, io};
 
 pub type SynScanResult<T> = Result<T, SynScanError>;
 
@@ -15,7 +15,6 @@ pub enum SynScanError {
     NoValidPECData,
     CommunicationError(io::Error),
 }
-
 
 impl fmt::Display for SynScanError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

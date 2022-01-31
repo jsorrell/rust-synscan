@@ -43,26 +43,22 @@ pub(crate) struct BiChannelValue<T> {
     channel2: T,
 }
 
-impl <T> BiChannelValue<T> {
+impl<T> BiChannelValue<T> {
     pub fn new(channel1: T, channel2: T) -> BiChannelValue<T> {
-        BiChannelValue {
-            channel1,
-            channel2,
-        }
+        BiChannelValue { channel1, channel2 }
     }
 
     #[allow(dead_code)]
     pub fn new_from_fn<F>(mut f: F) -> BiChannelValue<T>
-    where F: FnMut(SingleChannel) -> T
+    where
+        F: FnMut(SingleChannel) -> T,
     {
-        BiChannelValue::new(
-            f(SingleChannel::Channel1),
-            f(SingleChannel::Channel2)
-        )
+        BiChannelValue::new(f(SingleChannel::Channel1), f(SingleChannel::Channel2))
     }
 
     pub fn new_from_result_fn<F, E>(mut f: F) -> Result<BiChannelValue<T>, E>
-        where F: FnMut(SingleChannel) -> Result<T,E>
+    where
+        F: FnMut(SingleChannel) -> Result<T, E>,
     {
         Ok(BiChannelValue::new(
             f(SingleChannel::Channel1)?,
@@ -71,7 +67,7 @@ impl <T> BiChannelValue<T> {
     }
 }
 
-impl <T> ops::Index<SingleChannel> for BiChannelValue<T> {
+impl<T> ops::Index<SingleChannel> for BiChannelValue<T> {
     type Output = T;
 
     fn index(&self, channel: SingleChannel) -> &Self::Output {
