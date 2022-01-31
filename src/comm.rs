@@ -100,7 +100,7 @@ mod comm {
                     let bytes_read = self.serial_port.read(slice::from_mut(&mut byte))?;
                     self.check_amount_read(bytes_read)?;
                     if byte == b'\r' {
-                        break i;
+                        break;
                     } else {
                         if i < MAX_VALID_RESPONSE {
                             buf.push(byte);
