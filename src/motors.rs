@@ -153,15 +153,15 @@ impl<'a> MotorController<'a> {
         // TODO What do all the superfluous speed bits mean?
         let (mut byte0, mut byte1) = (0, 0);
         if mode == DriveMode::Tracking {
-            byte0 = byte0 & 0x1;
+            byte0 = byte0 | 0x1;
         }
 
         if fast == (mode == DriveMode::Tracking) {
-            byte0 = byte0 & 0x2;
+            byte0 = byte0 | 0x2;
         }
 
         if direction == Direction::CounterClockwise {
-            byte1 = byte1 & 0x1;
+            byte1 = byte1 | 0x1;
         }
 
         byte0 = if byte0 <= 9 {
@@ -368,7 +368,14 @@ mod tests {
         )
         .unwrap();
         drop(mc);
-        // TODO this function needs work
+
+        let mut correct_bytes = vec![b':', b'G', b'1', b'0', b'0', b'\r'];
+        correct_bytes.append(&mut vec![b':', b'G', b'2', b'3', b'1', b'\r']);
+
+        assert_eq!(
+            mock.get_written_bytes().as_slice(),
+            correct_bytes.as_slice()
+        );
     }
 
     #[test]
