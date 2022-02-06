@@ -54,15 +54,19 @@ pub struct MotorController<'a> {
     motor_parameters: MotorParameters,
 }
 
-impl<'a> MotorController<'a> {
+impl MotorController<'static> {
     pub fn new(
-        path: &'a str,
+        path: impl Into<String>,
         baud_rate: u32,
         timeout: Duration,
-    ) -> Result<MotorController, SynScanError> {
-        Self::new_with_port(serialport::new(path, baud_rate).timeout(timeout).open()?)
+    ) -> SynScanResult<MotorController<'static>>
+    {
+        let port = serialport::new(path.into(), baud_rate).timeout(timeout).open()?;
+        Self::new_with_port(port)
     }
+}
 
+impl <'a> MotorController<'a> {
     pub fn new_with_port(port: Box<dyn SerialPort + 'a>) -> SynScanResult<Self> {
         let mut port = MotorControllerPort { serial_port: port };
 
