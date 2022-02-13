@@ -40,9 +40,3 @@ impl From<io::Error> for SynScanError {
         SynScanError::CommunicationError(e)
     }
 }
-
-impl From<serialport::Error> for SynScanError {
-    fn from(e: serialport::Error) -> Self {
-        SynScanError::from(io::Error::from(e))
-    }
-}
