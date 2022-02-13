@@ -54,10 +54,10 @@ fn test_set_motion_mode() {
 fn test_set_goto_target() {
     let mock = MockSynScanPort::new();
     let mut mc = get_mc(mock.clone(), None);
-    mc.set_goto_target_counts(MultiChannel::Both, -1234)
-        .unwrap();
+    mc.set_goto_target(MultiChannel::Both, -1234).unwrap();
     mock.check_correct_number_written(SET_GOTO_TARGET, Both, 0x800000 - 1234, 6);
-    mc.set_goto_target(SingleChannel::Channel2, 90.).unwrap();
+    mc.set_goto_target_degrees(SingleChannel::Channel2, 90.)
+        .unwrap();
     mock.check_correct_number_written(SET_GOTO_TARGET, Channel2, 0x800000 + 45, 6);
 }
 
