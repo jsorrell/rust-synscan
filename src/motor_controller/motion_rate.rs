@@ -6,7 +6,7 @@ impl<T: SerialPort> MotorController<T> {
     /// Reads the step period of the mount.
     /// This is the interval of clock cycles the mount will wait before attempting to move the stepper motor.
     /// This is used to determine the speed of the mount
-    pub fn inquire_step_period(&mut self, channel: SingleChannel) -> SynScanResult<u32> {
+    pub fn inquire_step_period(&self, channel: SingleChannel) -> SynScanResult<u32> {
         self.port.inquire_number(INQUIRE_STEP_PERIOD, channel)
     }
 
@@ -14,14 +14,14 @@ impl<T: SerialPort> MotorController<T> {
     /// This is the interval of clock cycles the mount will wait before attempting to move the stepper motor.
     /// This is used to control the speed of the mount
     /// This will error if trying to change the period when moving in high speed mode
-    pub fn set_step_period(&mut self, channel: impl Channel, period: u32) -> SynScanResult<()> {
+    pub fn set_step_period(&self, channel: impl Channel, period: u32) -> SynScanResult<()> {
         self.port
             .send_cmd_number(SET_STEP_PERIOD, channel, period, 6)
     }
 
     /// Returns the current high speed ratio of the mount depending on whether it is in fast or slow mode.
     pub fn determine_motion_rate_multiplier(
-        &mut self,
+        &self,
         channel: SingleChannel,
     ) -> SynScanResult<f64> {
         if !self.inquire_status(channel)?.fast {
@@ -32,7 +32,7 @@ impl<T: SerialPort> MotorController<T> {
 
     /// Calculates the current motion of the mount depending on the step period and whether it is in fast or slow mode.
     fn determine_motion_rate(
-        &mut self,
+        &self,
         channel: SingleChannel,
         step_period: u32,
     ) -> SynScanResult<f64> {
@@ -42,14 +42,14 @@ impl<T: SerialPort> MotorController<T> {
 
     /// Calculates the set motion rate of the mount in counts per second
     /// This can be non-zero even if the mount is stopped
-    pub fn inquire_motion_rate_counts(&mut self, channel: SingleChannel) -> SynScanResult<f64> {
+    pub fn inquire_motion_rate_counts(&self, channel: SingleChannel) -> SynScanResult<f64> {
         let step_period = self.inquire_step_period(channel)?;
         self.determine_motion_rate(channel, step_period)
     }
 
     /// Calculates the set motion rate of the mount in degrees per second
     /// This can be non-zero even if the mount is stopped
-    pub fn inquire_motion_rate_degrees(&mut self, channel: SingleChannel) -> SynScanResult<f64> {
+    pub fn inquire_motion_rate_degrees(&self, channel: SingleChannel) -> SynScanResult<f64> {
         let counts = self.inquire_motion_rate_counts(channel)?;
         Ok(self.motor_parameters.counts_to_degrees(channel, counts))
     }
@@ -57,7 +57,7 @@ impl<T: SerialPort> MotorController<T> {
     /// Sets the motion rate of the mount in counts per second.
     /// Doesn't start a stopped mount. Use start_motion as well.
     pub fn set_motion_rate_counts(
-        &mut self,
+        &self,
         channel: SingleChannel,
         counts_per_sec: f64,
     ) -> SynScanResult<()> {
@@ -71,7 +71,7 @@ impl<T: SerialPort> MotorController<T> {
     /// Sets the motion rate of the mount in degrees per second.
     /// Doesn't start a stopped mount. Use start_motion as well.
     pub fn set_motion_rate_degrees(
-        &mut self,
+        &self,
         channel: SingleChannel,
         degrees_per_sec: f64,
     ) -> SynScanResult<()> {
@@ -83,17 +83,17 @@ impl<T: SerialPort> MotorController<T> {
     }
 
     /// Starts tracking or goto of a stopped mount.
-    pub fn start_motion(&mut self, channel: impl Channel) -> SynScanResult<()> {
+    pub fn start_motion(&self, channel: impl Channel) -> SynScanResult<()> {
         self.port.send_cmd(START_MOTION, channel)
     }
 
     /// Stops motion of the mount.
-    pub fn stop_motion(&mut self, channel: impl Channel) -> SynScanResult<()> {
+    pub fn stop_motion(&self, channel: impl Channel) -> SynScanResult<()> {
         self.port.send_cmd(STOP_MOTION, channel)
     }
 
     /// Instantly stops motion of the mount.
-    pub fn instant_stop(&mut self, channel: impl Channel) -> SynScanResult<()> {
+    pub fn instant_stop(&self, channel: impl Channel) -> SynScanResult<()> {
         self.port.send_cmd(INSTANT_STOP, channel)
     }
 }

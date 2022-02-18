@@ -50,11 +50,6 @@ impl MockSynScanPort {
         bufs.bytes_to_read.push(TERMINATION_BYTE);
     }
 
-    // pub fn get_written_bytes(&mut self) -> &Vec<u8> {
-    //     let bufs = self.bufs.lock().unwrap();
-    //     &self.bytes_written
-    // }
-
     pub fn check_correct(&self, command: u8, channel: impl Channel) {
         self.check_correct_query_written(command, channel, &[])
     }

@@ -2,8 +2,8 @@ use crate::port::commands::*;
 use crate::port::SynScanPort;
 use crate::util::*;
 use crate::*;
-use std::io::{Read, Write};
 use std::{io, slice};
+use std::sync::Mutex;
 
 /// Converts bytes returned from the mount into the number it describes
 pub(crate) fn bytes_to_number(data: Vec<u8>) -> SynScanResult<u32> {
@@ -53,18 +53,18 @@ impl<T: SerialPort> SynScanPort<T> {
     where
         T: SerialPort,
     {
-        SynScanPort(port)
+        SynScanPort(Mutex::new(port))
     }
 
-    fn read_byte(&mut self) -> io::Result<u8> {
+    fn read_byte(port: &mut impl SerialPort) -> io::Result<u8> {
         let mut b: u8 = 0;
-        if 0 == self.read(slice::from_mut(&mut b))? {
+        if 0 == port.read(slice::from_mut(&mut b))? {
             return Err(io::Error::from(io::ErrorKind::TimedOut));
         }
         Ok(b)
     }
 
-    pub fn test(&mut self) -> SynScanResult<()> {
+    pub fn test(&self) -> SynScanResult<()> {
         // TODO does initialization do anything?
         self.send_cmd(INITIALIZATION_DONE, MultiChannel::Both)
     }
@@ -83,16 +83,16 @@ impl<T: SerialPort> SynScanPort<T> {
         }
     }
 
-    fn consume_term_char(&mut self) -> io::Result<()> {
-        let termination_char = self.read_byte()?;
+    fn consume_term_char(port: &mut impl SerialPort) -> io::Result<()> {
+        let termination_char = Self::read_byte(port)?;
         if termination_char != TERMINATION_BYTE {
             return Err(io::Error::from(io::ErrorKind::InvalidData));
         }
         Ok(())
     }
 
-    fn read_response(&mut self) -> SynScanResult<Vec<u8>> {
-        let first_byte = self.read_byte()?;
+    fn read_response(port: &mut impl SerialPort) -> SynScanResult<Vec<u8>> {
+        let first_byte = Self::read_byte(port)?;
 
         if first_byte == SUCCESS_BYTE {
             // Successful
@@ -100,7 +100,7 @@ impl<T: SerialPort> SynScanPort<T> {
             let mut buf = Vec::with_capacity(MAX_VALID_RESPONSE);
             let mut i = 0;
             loop {
-                let byte = self.read_byte()?;
+                let byte = Self::read_byte(port)?;
                 if byte == TERMINATION_BYTE {
                     break;
                 } else if i < MAX_VALID_RESPONSE {
@@ -115,8 +115,8 @@ impl<T: SerialPort> SynScanPort<T> {
             Ok(buf)
         } else if first_byte == ERROR_BYTE {
             // Error Code
-            let error_code = self.read_byte()?;
-            self.consume_term_char()?;
+            let error_code = Self::read_byte(port)?;
+            Self::consume_term_char(port)?;
             Err(Self::resolve_controller_error(error_code))
         } else {
             Err(SynScanError::CommunicationError(io::Error::from(
@@ -126,23 +126,25 @@ impl<T: SerialPort> SynScanPort<T> {
     }
 
     fn raw_send_cmd(
-        &mut self,
+        &self,
         cmd: u8,
         channel: impl Channel,
         bytes: &[u8],
     ) -> SynScanResult<Vec<u8>> {
-        // let mut full_cmd = Vec::with_capacity(bytes.len() + 4);
         let mut full_cmd = vec![QUERY_BYTE, cmd, channel.get_byte()];
         full_cmd.extend(bytes);
         full_cmd.push(TERMINATION_BYTE);
-        match self.write_all(full_cmd.as_slice()) {
-            Ok(_) => self.read_response(),
+
+        let mut port_lock = self.0.lock().unwrap();
+
+        match port_lock.write_all(full_cmd.as_slice()) {
+            Ok(_) => Self::read_response(&mut *port_lock),
             Err(e) => Err(SynScanError::CommunicationError(e)),
         }
     }
 
     /// Inquires the mount for bytes
-    pub fn inquire_bytes(&mut self, cmd: u8, channel: impl Channel) -> SynScanResult<Vec<u8>> {
+    pub fn inquire_bytes(&self, cmd: u8, channel: impl Channel) -> SynScanResult<Vec<u8>> {
         let response = self.raw_send_cmd(cmd, channel, &[])?;
         if response.is_empty() {
             Err(SynScanError::CommunicationError(io::Error::from(
@@ -154,13 +156,13 @@ impl<T: SerialPort> SynScanPort<T> {
     }
 
     /// Inquires the mount for a number
-    pub fn inquire_number(&mut self, cmd: u8, channel: impl Channel) -> SynScanResult<u32> {
+    pub fn inquire_number(&self, cmd: u8, channel: impl Channel) -> SynScanResult<u32> {
         bytes_to_number(self.inquire_bytes(cmd, channel)?)
     }
 
     /// Sends a responseless command to the mount with bytes as the payload
     pub fn send_cmd_bytes(
-        &mut self,
+        &self,
         cmd: u8,
         channel: impl Channel,
         bytes: &[u8],
@@ -171,7 +173,7 @@ impl<T: SerialPort> SynScanPort<T> {
 
     /// Sends a responseless command to the mount with a number as the payload
     pub fn send_cmd_number(
-        &mut self,
+        &self,
         cmd: u8,
         channel: impl Channel,
         number: u32,
@@ -181,7 +183,7 @@ impl<T: SerialPort> SynScanPort<T> {
     }
 
     /// Sends a responseless command to the mount with no payload
-    pub fn send_cmd(&mut self, cmd: u8, channel: impl Channel) -> SynScanResult<()> {
+    pub fn send_cmd(&self, cmd: u8, channel: impl Channel) -> SynScanResult<()> {
         self.send_cmd_bytes(cmd, channel, &[])
     }
 }

@@ -1,3 +1,4 @@
+use std::sync::Mutex;
 use crate::port::mock::MockSynScanPort;
 use crate::port::SynScanPort;
 use crate::util::*;
@@ -16,7 +17,7 @@ fn get_mc<T: SerialPort>(mock: T, params: Option<MotorParameters>) -> MotorContr
     });
 
     MotorController {
-        port: SynScanPort(mock),
+        port: SynScanPort(Mutex::new(mock)),
         motor_parameters: params,
     }
 }
@@ -24,7 +25,7 @@ fn get_mc<T: SerialPort>(mock: T, params: Option<MotorParameters>) -> MotorContr
 #[test]
 fn test_set_pos() {
     let mock = MockSynScanPort::new();
-    let mut mc = get_mc(mock.clone(), None);
+    let mc = get_mc(mock.clone(), None);
 
     mc.set_pos(MultiChannel::Both, -1234).unwrap();
     mock.check_correct_number_written(SET_POSITION, MultiChannel::Both, 0x800000 - 1234, 6);
@@ -36,7 +37,7 @@ fn test_set_pos() {
 #[test]
 fn test_set_motion_mode() {
     let mock = MockSynScanPort::new();
-    let mut mc = get_mc(mock.clone(), None);
+    let mc = get_mc(mock.clone(), None);
     mc.set_motion_mode(SingleChannel::Channel1, DriveMode::Goto, true, Clockwise)
         .unwrap();
     mock.check_correct_query_written(SET_MOTION_MODE, Channel1, &[b'0', b'0']);
@@ -53,7 +54,7 @@ fn test_set_motion_mode() {
 #[test]
 fn test_set_goto_target() {
     let mock = MockSynScanPort::new();
-    let mut mc = get_mc(mock.clone(), None);
+    let mc = get_mc(mock.clone(), None);
     mc.set_goto_target(MultiChannel::Both, -1234).unwrap();
     mock.check_correct_number_written(SET_GOTO_TARGET, Both, 0x800000 - 1234, 6);
     mc.set_goto_target_degrees(SingleChannel::Channel2, 90.)
@@ -64,7 +65,7 @@ fn test_set_goto_target() {
 #[test]
 fn test_set_step_period() {
     let mock = MockSynScanPort::new();
-    let mut mc = get_mc(mock.clone(), None);
+    let mc = get_mc(mock.clone(), None);
 
     mc.set_step_period(MultiChannel::Both, 999).unwrap();
     mock.check_correct_number_written(SET_STEP_PERIOD, Both, 999, 6);
@@ -73,7 +74,7 @@ fn test_set_step_period() {
 #[test]
 fn test_start_stop_motion() {
     let mock = MockSynScanPort::new();
-    let mut mc = get_mc(mock.clone(), None);
+    let mc = get_mc(mock.clone(), None);
     mc.start_motion(SingleChannel::Channel1).unwrap();
     mock.check_correct(START_MOTION, Channel1);
     mc.stop_motion(MultiChannel::Both).unwrap();
@@ -85,7 +86,7 @@ fn test_start_stop_motion() {
 #[test]
 fn test_set_autoguide_speed() {
     let mock = MockSynScanPort::new();
-    let mut mc = get_mc(mock.clone(), None);
+    let mc = get_mc(mock.clone(), None);
     mc.set_autoguide_speed(SingleChannel::Channel1, AutoGuideSpeed::ThreeQuarters)
         .unwrap();
     mock.check_correct_query_written(SET_AUTOGUIDE_SPEED, Channel1, &[b'1'])
@@ -94,7 +95,7 @@ fn test_set_autoguide_speed() {
 #[test]
 fn test_get_goto_target() {
     let mock = MockSynScanPort::new();
-    let mut mc = get_mc(mock.clone(), None);
+    let mc = get_mc(mock.clone(), None);
     mock.add_valid_number(0x800000 + 25, 6);
     assert_eq!(mc.inquire_goto_target(SingleChannel::Channel1).unwrap(), 25);
     mock.check_correct(INQUIRE_GOTO_TARGET_POSITION, Channel1);
@@ -112,7 +113,7 @@ fn test_get_goto_target() {
 fn test_get_step_period() {
     let mock = MockSynScanPort::new();
     mock.add_valid_number(800, 6);
-    let mut mc = get_mc(mock.clone(), None);
+    let mc = get_mc(mock.clone(), None);
     assert_eq!(
         mc.inquire_step_period(SingleChannel::Channel2).unwrap(),
         800
@@ -123,7 +124,7 @@ fn test_get_step_period() {
 #[test]
 fn test_get_pos() {
     let mock = MockSynScanPort::new();
-    let mut mc = get_mc(mock.clone(), None);
+    let mc = get_mc(mock.clone(), None);
     mock.add_valid_number(0x800000 + 25, 6);
     assert_eq!(mc.inquire_pos(Channel1).unwrap(), 25);
     mock.check_correct(INQUIRE_POSITION, Channel1);
@@ -136,7 +137,7 @@ fn test_get_pos() {
 #[test]
 fn test_get_status() {
     let mock = MockSynScanPort::new();
-    let mut mc = get_mc(mock.clone(), None);
+    let mc = get_mc(mock.clone(), None);
     mock.add_valid_response(&[b'7', b'1', b'1']);
     assert_eq!(
         mc.inquire_status(Channel1).unwrap(),

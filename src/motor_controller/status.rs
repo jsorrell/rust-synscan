@@ -18,7 +18,7 @@ pub struct MotorStatus {
 
 impl<T: SerialPort> MotorController<T> {
     /// Returns a [MotorStatus] describing the mount status
-    pub fn inquire_status(&mut self, channel: SingleChannel) -> SynScanResult<MotorStatus> {
+    pub fn inquire_status(&self, channel: SingleChannel) -> SynScanResult<MotorStatus> {
         let data = self.port.inquire_bytes(INQUIRE_STATUS, channel)?;
         let bytes = data
             .into_iter()
@@ -62,14 +62,14 @@ impl<T: SerialPort> MotorController<T> {
 
     /// Sets the motion mode to either fast or slow GOTO mode
     /// Errors if called when the mount is not stopped
-    pub fn set_goto_motion_mode(&mut self, channel: impl Channel, fast: bool) -> SynScanResult<()> {
+    pub fn set_goto_motion_mode(&self, channel: impl Channel, fast: bool) -> SynScanResult<()> {
         self.set_motion_mode(channel, Goto, fast, Clockwise) // direction doesn't do anything
     }
 
     /// Sets the motion mode to either fast or slow Tracking mode in the given direction
     /// Errors if called when the mount is not stopped
     pub fn set_tracking_motion_mode(
-        &mut self,
+        &self,
         channel: impl Channel,
         fast: bool,
         direction: Direction,
@@ -80,7 +80,7 @@ impl<T: SerialPort> MotorController<T> {
     /// Sets the motion mode
     /// Errors if called when the mount is not stopped
     pub fn set_motion_mode(
-        &mut self,
+        &self,
         channel: impl Channel,
         mode: DriveMode,
         fast: bool,

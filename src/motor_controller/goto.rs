@@ -5,7 +5,7 @@ use crate::*;
 impl<T: SerialPort> MotorController<T> {
     /// Sets the goto target in encoder counts relative to where the mount was initialized
     /// Positive counts are clockwise
-    pub fn set_goto_target(&mut self, channel: impl Channel, counts: i32) -> SynScanResult<()> {
+    pub fn set_goto_target(&self, channel: impl Channel, counts: i32) -> SynScanResult<()> {
         self.port
             .send_cmd_number(SET_GOTO_TARGET, channel, (counts + 0x800000) as u32, 6)
     }
@@ -13,7 +13,7 @@ impl<T: SerialPort> MotorController<T> {
     /// Sets the goto target in degrees relative to where the mount was initialized
     /// Positive degrees are clockwise
     pub fn set_goto_target_degrees(
-        &mut self,
+        &self,
         channel: SingleChannel,
         degrees: f64,
     ) -> SynScanResult<()> {
@@ -26,7 +26,7 @@ impl<T: SerialPort> MotorController<T> {
 
     /// Reads the goto target in counts relative to where the mount was initialized
     /// Positive counts are clockwise
-    pub fn inquire_goto_target(&mut self, channel: SingleChannel) -> SynScanResult<i32> {
+    pub fn inquire_goto_target(&self, channel: SingleChannel) -> SynScanResult<i32> {
         let counts = self
             .port
             .inquire_number(INQUIRE_GOTO_TARGET_POSITION, channel)?;
@@ -35,7 +35,7 @@ impl<T: SerialPort> MotorController<T> {
 
     /// Reads the goto target in degrees relative to where the mount was initialized
     /// Positive degrees are clockwise
-    pub fn inquire_goto_target_degrees(&mut self, channel: SingleChannel) -> SynScanResult<f64> {
+    pub fn inquire_goto_target_degrees(&self, channel: SingleChannel) -> SynScanResult<f64> {
         let counts = self.inquire_goto_target(channel)?;
         Ok(self
             .motor_parameters

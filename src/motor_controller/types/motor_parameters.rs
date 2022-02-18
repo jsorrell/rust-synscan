@@ -26,7 +26,7 @@ impl MotorParameters {
 }
 
 impl<T: SerialPort> SynScanPort<T> {
-    pub fn get_motor_parameters(&mut self) -> SynScanResult<MotorParameters> {
+    pub fn get_motor_parameters(&self) -> SynScanResult<MotorParameters> {
         Ok(MotorParameters {
             counts_per_revolution: SingleChannel::VALUES
                 .into_iter()

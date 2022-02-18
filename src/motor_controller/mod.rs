@@ -41,7 +41,7 @@ where
 {
     /// Returns a new MotorController attached through the given port
     pub fn new(port: T) -> SynScanResult<Self> {
-        let mut port = SynScanPort::new(port);
+        let port = SynScanPort::new(port);
         port.test()?;
 
         let motor_parameters = port.get_motor_parameters()?;
@@ -59,13 +59,13 @@ impl<T: SerialPort> MotorController<T> {
     }
 
     /// Tests the mount is connected
-    pub fn test(&mut self) -> SynScanResult<()> {
+    pub fn test(&self) -> SynScanResult<()> {
         self.port.test()
     }
 
     /// Sets the autoguide speed of the mount
     pub fn set_autoguide_speed(
-        &mut self,
+        &self,
         channel: impl Channel,
         speed: AutoGuideSpeed,
     ) -> SynScanResult<()> {
